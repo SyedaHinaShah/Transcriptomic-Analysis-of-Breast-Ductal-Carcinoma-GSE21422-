@@ -1,6 +1,5 @@
 # Transcriptomic-Analysis-of-Breast-Ductal-Carcinoma-GSE21422-
 This repository provides an open-source transcriptomic analysis workflow of the GEO dataset GSE21422, profiling ductal carcinoma in situ (DCIS) and invasive ductal carcinoma (IDC). Using R and Bioconductor, the project covers data preprocessing, normalization, differential gene expression (limma), and visualization (volcano plot)
-str(GSE21422)
 
 # Install Packages
  if (!requireNamespace("preprocessCore", quietly = TRUE)) {
@@ -15,9 +14,9 @@ library(limma)
 library(ggplot2)
 
 # 2. Load your dataset (already loaded in your case)
-# If not, load it using:
-# library(readxl)
-# GSE21422_series_matrix <- read_excel("GSE21422.xlsx")
+
+ library(readxl)
+#GSE21422_series_matrix <- read_excel("GSE21422.xlsx")
 
 # 3. Extract expression matrix
 expr_raw <- as.matrix(GSE21422[ , -1])  # Remove ID_REF
@@ -51,7 +50,7 @@ boxplot(expr_norm,
         outline = FALSE)
 
 # 
-#####DGE
+##### DGE
 # 1. Load libraries
 library(preprocessCore)
 library(limma)
@@ -96,6 +95,8 @@ ggplot(deg_results, aes(x = logFC, y = -log10(adj.P.Val), color = Significant)) 
   scale_color_manual(values = c("blue", "red")) + 
   labs(title = "Volcano Plot: GSE21422", x = "Log2 Fold Change", y = "-log10 Adjusted P-Value")
   theme_minimal() +
+
+  
 <img width="1200" height="1000" alt="volcano_plot_GSE21422" src="https://github.com/user-attachments/assets/d4539880-1794-4fcc-961e-313e6adc038d" />
 <img width="1200" height="800" alt="boxplot_after_norm" src="https://github.com/user-attachments/assets/78f45ff4-fc48-4cde-a713-02c1cb3c605c" />
 <img width="1200" height="800" alt="boxplot_before_norm" src="https://github.com/user-attachments/assets/f445284c-6902-4292-8494-acb6dc8fd4bd" />
