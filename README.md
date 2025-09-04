@@ -1,81 +1,9 @@
 # Transcriptomic-Analysis-of-Breast-Ductal-Carcinoma-GSE21422-
 This repository provides an open-source transcriptomic analysis workflow of the GEO dataset GSE21422, profiling ductal carcinoma in situ (DCIS) and invasive ductal carcinoma (IDC). Using R and Bioconductor, the project covers data preprocessing, normalization, differential gene expression (limma), and visualization (volcano plot)
 str(GSE21422)
-# Install if not installed
-if (!requireNamespace("preprocessCore", quietly = TRUE)) {
-  install.packages("BiocManager")
-  BiocManager::install("preprocessCore")
-}
-library(preprocessCore)
 
-# Your dataset: GSE21422_series_matrix (tibble with ID_REF + 20 columns)
-
-# Extract expression matrix (remove ID_REF)
-expr_matrix <- as.matrix(GSE21422[ , -1])  # numeric matrix of expression values
-
-# Check if log2 transform is needed (usually microarray data are log2 scale)
-# Basic heuristic: if max value > 100, probably not log-transformed yet
-max_val <- max(expr_matrix, na.rm=TRUE)
-if (max_val > 100) {
-  expr_matrix <- log2(expr_matrix + 1)  # add 1 to avoid log(0)
-  message("Data log2 transformed")
-} else {
-  message("Data looks already log2 transformed")
-}
-
-# Quantile Normalization
-expr_norm <- normalize.quantiles(expr_matrix)
-
-# Add back row names and column names
-rownames(expr_norm) <- GSE21422$ID_REF
-colnames(expr_norm) <- colnames(GSE21422)[-1]
-
-# Convert to data frame for convenience
-expr_norm_df <- as.data.frame(expr_norm)
-
-# Optional: add ID_REF as column again
-expr_norm_df$ID_REF <- rownames(expr_norm_df)
-
-# View normalized data summary
-summary(expr_norm_df[ , 1:5])  # view summary of first 5 samples
-
-# Now expr_norm_df contains normalized expression values for downstream analysis
-###boxplot
-# Extract expression matrix before normalization
-expr_raw <- as.matrix(GSE21422[ , -1])
-rownames(expr_raw) <- GSE21422$ID_REF
-
-# Log2 transform if needed (same logic as before)
-max_val <- max(expr_raw, na.rm=TRUE)
-if (max_val > 100) {
-  expr_raw <- log2(expr_raw + 1)
-}
-
-# Boxplot before normalization
-boxplot(expr_raw,
-        main = "Boxplot Before Normalization",
-        las=2,
-        col = "red",
-        outline=FALSE)
-
-# Quantile normalization
-expr_norm <- normalize.quantiles(expr_raw)
-rownames(expr_norm) <- rownames(expr_raw)
-colnames(expr_norm) <- colnames(expr_raw)
-
-# Boxplot after normalization
-boxplot(expr_norm,
-        main = "Boxplot After Quantile Normalization",
-        las=2,
-        col = "green",
-        outline=FALSE)
-###updatedbefore working 
-# -------------------------------
-# Differential Expression Script
-# -------------------------------
-
-# 1. Load necessary packages
-if (!requireNamespace("preprocessCore", quietly = TRUE)) {
+# Install Packages
+ if (!requireNamespace("preprocessCore", quietly = TRUE)) {
   install.packages("BiocManager")
   BiocManager::install("preprocessCore")
 }
@@ -165,76 +93,11 @@ deg_results$Significant <- with(deg_results, ifelse(adj.P.Val < 0.05 & abs(logFC
 
 ggplot(deg_results, aes(x = logFC, y = -log10(adj.P.Val), color = Significant)) +
   geom_point(alpha = 0.7) +
-  scale_color_manual(values = c("blue", "red")) +
-  theme_minimal() +
+  scale_color_manual(values = c("blue", "red")) + 
   labs(title = "Volcano Plot: GSE21422", x = "Log2 Fold Change", y = "-log10 Adjusted P-Value")
-
-# 9. Heatmap of top 50 DEGs
-top_genes <- rownames(deg_results)[1:50]
-heatmap_data <- expr_norm[top_genes, ]
-heatmap_data <- t(scale(t(heatmap_data)))  # z-score scaling
-
-pheatmap(heatmap_data, 
-         cluster_rows = TRUE, 
-         cluster_cols = TRUE, 
-         annotation_col = data.frame(Group = group),
-         show_rownames = FALSE,
-         main = "Top 50 DEGs Heatmap")
-
-######
-deg_results_clean <- deg_results[!is.na(deg_results$logFC) & !is.na(deg_results$adj.P.Val), ]
-deg_results_clean$Significant <- with(deg_results_clean, ifelse(adj.P.Val < 0.05 & abs(logFC) > 1, "Yes", "No"))
-
-ggplot(deg_results_clean, aes(x = logFC, y = -log10(adj.P.Val), color = Significant)) +
-  geom_point(alpha = 0.7) +
-  scale_color_manual(values = c("blue", "red")) +
   theme_minimal() +
-  labs(title = "Volcano Plot: GSE21422", x = "Log2 Fold Change", y = "-log10 Adjusted P-Value")
-###heatmap
-annotation_col = data.frame(Group = group)
-annotation_col <- data.frame(Group = group)
-rownames(annotation_col) <- colnames(expr_norm)  # set rownames to sample names
+<img width="1200" height="1000" alt="volcano_plot_GSE21422" src="https://github.com/user-attachments/assets/d4539880-1794-4fcc-961e-313e6adc038d" />
+<img width="1200" height="800" alt="boxplot_after_norm" src="https://github.com/user-attachments/assets/78f45ff4-fc48-4cde-a713-02c1cb3c605c" />
+<img width="1200" height="800" alt="boxplot_before_norm" src="https://github.com/user-attachments/assets/f445284c-6902-4292-8494-acb6dc8fd4bd" />
 
-pheatmap(heatmap_data, 
-         cluster_rows = TRUE, 
-         cluster_cols = TRUE, 
-         annotation_col = annotation_col,
-         show_rownames = FALSE,
-         main = "Top 50 DEGs Heatmap")
-##
-# Example: save boxplot before normalization
-png("boxplot_before_norm.png", width = 1200, height = 800, res = 150)
-boxplot(expr_raw,
-        main = "Boxplot Before Normalization",
-        las = 2,
-        col = "lightblue",
-        outline = FALSE)
-dev.off()
-
-# Example: save boxplot after normalization
-png("boxplot_after_norm.png", width = 1200, height = 800, res = 150)
-boxplot(expr_norm,
-        main = "Boxplot After Quantile Normalization",
-        las = 2,
-        col = "lightgreen",
-        outline = FALSE)
-dev.off()
-
-# Save Volcano Plot
-png("volcano_plot_GSE21422.png", width = 1200, height = 1000, res = 150)
-ggplot(deg_results_clean, aes(x = logFC, y = -log10(adj.P.Val), color = Significant)) +
-  geom_point(alpha = 0.7) +
-  scale_color_manual(values = c("blue", "red")) +
-  theme_minimal() +
-  labs(title = "Volcano Plot: GSE21422", x = "Log2 Fold Change", y = "-log10 Adjusted P-Value")
-dev.off()
-
-# Save Heatmap
-png("heatmap_top50_GSE21422.png", width = 1200, height = 1000, res = 150)
-pheatmap(heatmap_data, 
-         cluster_rows = TRUE, 
-         cluster_cols = TRUE, 
-         annotation_col = annotation_col,
-         show_rownames = FALSE,
-         main = "Top 50 DEGs Heatmap")
-dev.off()
+  labs(title = "Volcano Plot: GSE21422", x = "Log 2 Fold Change", y = "-log10 Adjusted P-Value")
